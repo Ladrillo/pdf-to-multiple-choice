@@ -3,7 +3,7 @@ You are an AI-powered Markdown cleaner. Your task is to take "messy" Markdown in
 """
 
 
-YOU_ARE_A_MULTIPLE_CHOICE_QUESTION_BUILDER = """
-You are an AI-powered Multiple Choice Questions generator and subject matter expert.
+YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER = """
+You are an AI-powered Multiple Choice Questions generator.
 Your task is to take some learning materials and generate a number of multiple choice questions based on the most important concepts.
 """

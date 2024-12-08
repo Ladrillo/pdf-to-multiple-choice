@@ -72,21 +72,21 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
                 """ + content
             },
         ])
-        formatted_text = mdformat.text(response['message']['content'])
-        file_path.write_text(formatted_text, encoding='utf-8')
+        clean_markdown = response['message']['content']
+        file_path.write_text(clean_markdown, encoding='utf-8')
 
         file_name = f"{title}_QUIZ_{idx + 1}.md"
         file_path = output_dir / file_name
         response = chat(model='llama3.3', options={"temperature": temperature, "num_ctx": num_ctx}, messages=[
             {
                 'role': 'system',
-                'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUESTION_BUILDER
+                'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER
             },
             {
                 'role': 'user',
                 'content': """
                     Please, without making any comments, generate interesting and relevant multiple-choice questions from the following content:
-                """ + formatted_text
+                """ + clean_markdown
             },
         ])
         formatted_quiz = mdformat.text(response['message']['content'])
