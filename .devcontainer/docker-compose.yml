@@ -1,0 +1,11 @@
+services:
+  devcontainer:
+    network_mode: host
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+    command: tail -f /dev/null
+    env_file:
+      - .env

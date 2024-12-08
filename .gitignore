@@ -1,0 +1,65 @@
+# Byte-compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Testing and coverage
+.coverage
+.tox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs and debug files
+*.log
+*.pot
+*.mo
+*.pid
+*.gz
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore virtual environment
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Ignore local settings
+settings_local.py
+local_settings.py
+
+sources
+prompts.py
