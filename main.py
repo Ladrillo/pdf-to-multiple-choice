@@ -14,7 +14,7 @@ except ImportError:
     import warnings
     warnings.warn("Using default constants.")
 
-temperature = 0.0
+temperature = 0.2
 num_ctx = 8192
 
 
@@ -60,7 +60,7 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
     for idx, content in enumerate(markdowns):
         file_name = f"{title}_clean_{idx + 1}.md"
         file_path = output_dir / file_name
-        response = chat(model='llama3.2', options={"temperature": temperature, "num_ctx": num_ctx}, messages=[
+        response = chat(model='llama3.3', options={"temperature": temperature, "num_ctx": num_ctx}, messages=[
             {
                 'role': 'system',
                 'content': prm.YOU_ARE_A_MARKDOWN_CLEANER
@@ -72,7 +72,7 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
                 """ + content
             },
         ])
-        clean_markdown = response['message']['content']
+        clean_markdown = mdformat.text(response['message']['content'])
         file_path.write_text(clean_markdown, encoding='utf-8')
 
         file_name = f"{title}_QUIZ_{idx + 1}.md"
