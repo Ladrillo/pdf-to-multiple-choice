@@ -6,11 +6,15 @@ The documents must be of decent quality as no OCR is performed for now, only str
 
 ## Usage
 
-Create a `.env` file inside `.devcontainer` to keep your development environment variables.
+Create a `.env` file inside `.devcontainer` for your development environment variables.
+
+Create a `prompts.py` file at the root of the project for your custom prompts.
 
 Open the project inside a [DevContainer](https://code.visualstudio.com/docs/devcontainers/containers).
 
-You must have the [Ollama](https://github.com/ollama/ollama) server running on your system.
+The [Ollama](https://github.com/ollama/ollama) server must be up and running on your system.
+
+Configure your Docker settings to "Enable host networking".
 
 ```bash
 python main.py ./sample.pdf
