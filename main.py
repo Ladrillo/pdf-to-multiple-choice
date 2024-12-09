@@ -14,9 +14,9 @@ except ImportError:
     import warnings
     warnings.warn("Using default constants.")
 
-temperature = 0.2
+temperature = 0
 num_ctx = 8192
-model = "llama3.2"
+model = "llama3.3"
 
 
 def create_output_dir(path):
@@ -67,9 +67,7 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
             },
             {
                 'role': 'user',
-                'content': """
-                    Please, without making any comments, generate a clean version of the following Markdown text:
-                """ + content
+                'content': content
             },
         ])
         clean_markdown = mdformat.text(response['message']['content'])
@@ -85,9 +83,7 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
             },
             {
                 'role': 'user',
-                'content': """
-                    Please, without making any comments, generate interesting and relevant multiple-choice questions from the following content:
-                """ + clean_markdown
+                'content': clean_markdown
             },
         ])
         file_name = f"{title}_QUIZ_{idx + 1}.md"
