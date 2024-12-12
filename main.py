@@ -16,7 +16,7 @@ except ImportError:
 
 temperature = 0
 num_ctx = 16384
-model = "llama3.2"
+model = "llama3.3"
 # model = "llama3.3:70b-instruct-q6_K"
 
 
@@ -139,7 +139,7 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
         else:
             file_path_clean.write_text("<!-- paratext -->", encoding='utf-8')
             file_path_quiz.write_text("<!-- paratext -->", encoding='utf-8')
-            formatted_improved_quiz.write_text("<!-- paratext -->", encoding='utf-8')
+            file_path_quiz_improved.write_text("<!-- paratext -->", encoding='utf-8')
 
 
 def process(pdf_path):
