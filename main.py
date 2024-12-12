@@ -16,7 +16,7 @@ except ImportError:
 
 temperature = 0
 num_ctx = 16384
-model = "llama3.3"
+model = "llama3.2"
 # model = "llama3.3:70b-instruct-q6_K"
 
 
@@ -88,6 +88,9 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
         file_path_clean = output_dir / file_name_clean
         file_name_quiz = f"{title}_QUIZ_{idx + 1}.md"
         file_path_quiz = output_dir / file_name_quiz
+        file_name_quiz_improved = f"{title}_QUIZ_REVIEWED_{idx + 1}.md"
+        file_path_quiz_improved = output_dir / file_name_quiz_improved
+
         if should_process(response_classify_content):
             print(f"Cleaning Markdown {idx + 1} / {len(markdowns)}")
             response_cleaning = chat(model=model, options={"temperature": temperature, "num_ctx": num_ctx}, messages=[
@@ -118,9 +121,25 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
             response_quiz_content = response_quiz['message']['content']
             formatted_quiz = mdformat.text(response_quiz_content)
             file_path_quiz.write_text(formatted_quiz, encoding='utf-8')
+
+            print(f"IMPROVING Quiz    {idx + 1} / {len(markdowns)}")
+            improved_quiz = chat(model=model, options={"temperature": temperature, "num_ctx": num_ctx}, messages=[
+                {
+                    'role': 'system',
+                    'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_REVIEWER
+                },
+                {
+                    'role': 'user',
+                    'content': formatted_quiz
+                },
+            ])
+            improved_quiz_content = improved_quiz['message']['content']
+            formatted_improved_quiz = mdformat.text(improved_quiz_content)
+            file_path_quiz_improved.write_text(formatted_improved_quiz, encoding='utf-8')
         else:
             file_path_clean.write_text("<!-- paratext -->", encoding='utf-8')
             file_path_quiz.write_text("<!-- paratext -->", encoding='utf-8')
+            formatted_improved_quiz.write_text("<!-- paratext -->", encoding='utf-8')
 
 
 def process(pdf_path):
