@@ -1,4 +1,3 @@
-from openai import OpenAI
 import sys
 import pathlib
 from pathlib import Path
@@ -6,6 +5,7 @@ import mdformat
 import shutil
 import pymupdf4llm
 from ollama import chat
+from openai import OpenAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 try:
@@ -17,11 +17,35 @@ except ImportError:
 
 temperature = 0
 num_ctx = 16384
-# model = "gpt-4o"
 # model = "llama3.3"
-model = "llama3.3:70b-instruct-q6_K"
+model = "gpt-4o"
+# model = "llama3.3:70b-instruct-q6_K"
 
 client = OpenAI()
+
+pipeline = [
+    'markdown-classify',
+    'markdown-clean',
+    'quiz-create',
+    'quiz-polish',
+]
+
+
+def call_model(messages):
+    if model == "gpt-4o":
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+        )
+        return response.choices[0].message.content
+    else:
+        response = chat(
+            model=model,
+            options={"temperature": temperature, "num_ctx": num_ctx},
+            messages=messages
+        )
+        return response['message']['content']
 
 
 def create_output_dir(path):
@@ -75,24 +99,10 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
         prompt_classify = f"The following text comes from a book on {title}, it's about {
             word_count} words in length. Classify it as either \"Body\" or \"Paratext\":\n\n"
 
-        if model == "gpt-4o":
-            response_classify = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": prm.YOU_RATE_CONTENT},
-                    {"role": "user", "content": prompt_classify + content},
-                ]
-            )
-            response_classify_content = response_classify.choices[0].message.content
-        else:
-            response_classify = chat(
-                model=model,
-                options={"temperature": temperature, "num_ctx": num_ctx},
-                messages=[
-                    {'role': 'system', 'content': prm.YOU_RATE_CONTENT},
-                    {'role': 'user', 'content': prompt_classify + content},
-                ])
-            response_classify_content = response_classify['message']['content']
+        response_classify_content = call_model([
+            {"role": "system", "content": prm.YOU_RATE_CONTENT},
+            {"role": "user", "content": prompt_classify + content},
+        ])
 
         print(f"{idx + 1} --> ", response_classify_content)
 
@@ -106,80 +116,37 @@ def reformat_markdowns_by_LLM(title, markdowns, output_dir):
 
         if should_process(response_classify_content):
             print(f"Cleaning Markdown {idx + 1} / {len(markdowns)}")
-            if model == "gpt-4o":
-                response_cleaning = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": prm.YOU_ARE_A_MARKDOWN_CLEANER},
-                        {"role": "user", "content": content}
-                    ]
-                )
-                response_cleaning_content = response_cleaning.choices[0].message.content
-            else:
-                response_cleaning = chat(
-                    model=model,
-                    options={"temperature": temperature, "num_ctx": num_ctx},
-                    messages=[
-                        {'role': 'system', 'content': prm.YOU_ARE_A_MARKDOWN_CLEANER},
-                        {'role': 'user', 'content': content},
-                    ])
-                response_cleaning_content = response_cleaning['message']['content']
+
+            response_cleaning_content = call_model([
+                {"role": "system", "content": prm.YOU_ARE_A_MARKDOWN_CLEANER},
+                {"role": "user", "content": content}
+            ])
 
             clean_markdown = mdformat.text(response_cleaning_content)
             file_path_clean.write_text(clean_markdown, encoding='utf-8')
 
             print(f"Creating Quiz     {idx + 1} / {len(markdowns)}")
-            if model == "gpt-4o":
-                response_quiz = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system",
-                            "content": prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER},
-                        {"role": "user", "content": clean_markdown}
-                    ]
-                )
-                response_quiz_content = response_quiz.choices[0].message.content
-            else:
-                response_quiz = chat(
-                    model=model,
-                    options={"temperature": temperature, "num_ctx": num_ctx},
-                    messages=[
-                        {
-                            'role': 'system',
-                            'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER
-                        },
-                        {'role': 'user', 'content': clean_markdown},
-                    ])
-                response_quiz_content = response_quiz['message']['content']
+
+            response_quiz_content = call_model([
+                {
+                    'role': 'system',
+                    'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER
+                },
+                {'role': 'user', 'content': clean_markdown},
+            ])
 
             formatted_quiz = mdformat.text(response_quiz_content)
             file_path_quiz.write_text(formatted_quiz, encoding='utf-8')
 
             print(f"IMPROVING Quiz    {idx + 1} / {len(markdowns)}")
-            if model == "gpt-4o":
-                improved_quiz = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_REVIEWER,
-                        },
-                        {"role": "user", "content": formatted_quiz}
-                    ]
-                )
-                improved_quiz_content = improved_quiz.choices[0].message.content
-            else:
-                improved_quiz = chat(
-                    model=model,
-                    options={"temperature": temperature, "num_ctx": num_ctx},
-                    messages=[
-                        {
-                            'role': 'system',
-                            'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_REVIEWER
-                        },
-                        {'role': 'user', 'content': formatted_quiz},
-                    ])
-                improved_quiz_content = improved_quiz['message']['content']
+
+            improved_quiz_content = call_model([
+                {
+                    "role": "system",
+                    "content": prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_REVIEWER,
+                },
+                {"role": "user", "content": formatted_quiz}
+            ])
 
             formatted_improved_quiz = mdformat.text(improved_quiz_content)
             file_path_quiz_improved.write_text(
