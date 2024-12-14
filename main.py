@@ -158,7 +158,8 @@ def quiz_create(input_path, output_path):
                 {'role': 'user', 'content': markdown},
             ])
             response_improved = call_model([
-                {'role': 'system','content': prm.IMPROVE_MCQ},
+                {'role': 'system','content': prm.MCQ},
+                {'role': 'user', 'content': markdown},
                 {'role': 'assistant', 'content': response},
                 {'role': 'user', 'content': prm.IMPROVE_MCQ},
             ])
