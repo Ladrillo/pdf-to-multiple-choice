@@ -18,9 +18,9 @@ client = OpenAI()
 
 temperature = 0
 num_ctx = 16384
-# model = "llama3.2"
+model = "llama3.3"
 # model = "gpt-4o"
-model = "llama3.3:70b-instruct-q6_K"
+# model = "llama3.3:70b-instruct-q6_K"
 
 pipeline = [
     'pdf_convert',
@@ -100,7 +100,7 @@ def pdf_convert(pdf_path, output_path):
 
 
 def markdown_split(input_path, output_path):
-    print(f"Splitting Markdown to {output_path}")
+    print(f"Splitting Markdown to {output_path}...")
     split_by = [("#", "H1"), ("##", "H2"), ("###", "H3"), ("####", "H4")]
     splitter = MarkdownHeaderTextSplitter(split_by, strip_headers=False)
     markdown_path = list(input_path.iterdir())[0]
@@ -115,7 +115,7 @@ def markdown_split(input_path, output_path):
 
 
 def markdown_classify(input_path, output_path):
-    print(f"Clasifying Markdown to {output_path}")
+    print(f"Clasifying Markdown to {output_path}...")
     for file_path in input_path.iterdir():
         markdown = file_path.read_text(encoding='utf-8')
         prompt_classify = "Classify as either \"Body\" or \"Paratext\":\n"
@@ -130,7 +130,7 @@ def markdown_classify(input_path, output_path):
     print(f"Clasifying done")
 
 def markdown_clean(input_path, output_path):
-    print(f"Cleaning Markdown to {output_path}")
+    print(f"Cleaning Markdown to {output_path}...")
     for file_path in input_path.iterdir():
         markdown = file_path.read_text(encoding='utf-8')
         response = call_model([
@@ -145,7 +145,7 @@ def markdown_clean(input_path, output_path):
 
 
 def quiz_create(input_path, output_path):
-    print(f"Creating MCQs to {output_path}")
+    print(f"Creating MCQs to {output_path}...")
     for file_path in input_path.iterdir():
         markdown = file_path.read_text(encoding='utf-8')
         file_name = f"{file_path.stem}_quiz.md"
@@ -163,7 +163,7 @@ def quiz_create(input_path, output_path):
                 {'role': 'user', 'content': prm.IMPROVE_MCQ},
             ])
             file_path_new.write_text(response_improved, encoding='utf-8')
-        print(f"MCQs done")
+    print(f"Creating MCQs done")
 
 
 tools = [
