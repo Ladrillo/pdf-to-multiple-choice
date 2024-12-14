@@ -111,6 +111,7 @@ def markdown_split(input_path, output_path):
         file_name = f"fragment_{idx + 1}.md"
         file_path = output_path / file_name
         file_path.write_text(content, encoding='utf-8')
+    print(f"Splitting done")
 
 
 def markdown_classify(input_path, output_path):
@@ -126,7 +127,7 @@ def markdown_classify(input_path, output_path):
         file_name = f"{file_path.stem}_{parameter}.md"
         file_path_new = output_path / file_name
         file_path_new.write_text(markdown, encoding='utf-8')
-
+    print(f"Clasifying done")
 
 def markdown_clean(input_path, output_path):
     print(f"Cleaning Markdown to {output_path}")
@@ -140,6 +141,7 @@ def markdown_clean(input_path, output_path):
         file_name = f"{file_path.stem}_clean.md"
         file_path_new = output_path / file_name
         file_path_new.write_text(clean_markdown, encoding='utf-8')
+    print(f"Cleaning done")
 
 
 def quiz_create(input_path, output_path):
@@ -161,6 +163,7 @@ def quiz_create(input_path, output_path):
                 {'role': 'user', 'content': prm.IMPROVE_MCQ},
             ])
             file_path_new.write_text(response_improved, encoding='utf-8')
+        print(f"MCQs done")
 
 
 tools = [
