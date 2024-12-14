@@ -18,9 +18,9 @@ client = OpenAI()
 
 temperature = 0
 num_ctx = 16384
-model = "llama3.2"
+# model = "llama3.2"
 # model = "gpt-4o"
-# model = "llama3.3:70b-instruct-q6_K"
+model = "llama3.3:70b-instruct-q6_K"
 
 pipeline = [
     'pdf_convert',
@@ -152,17 +152,11 @@ def quiz_create(input_path, output_path):
             file_path_new.write_text("<!-- paratext -->", encoding='utf-8')
         else:
             response = call_model([
-                {
-                    'role': 'system',
-                    'content': prm.MCQ
-                },
+                {'role': 'system','content': prm.MCQ},
                 {'role': 'user', 'content': markdown},
             ])
             response_improved = call_model([
-                {
-                    'role': 'system',
-                    'content': prm.IMPROVE_MCQ
-                },
+                {'role': 'system','content': prm.IMPROVE_MCQ},
                 {'role': 'assistant', 'content': response},
                 {'role': 'user', 'content': prm.IMPROVE_MCQ},
             ])
