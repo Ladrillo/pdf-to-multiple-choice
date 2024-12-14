@@ -18,7 +18,7 @@ client = OpenAI()
 
 temperature = 0
 num_ctx = 16384
-model = "llama3.3"
+model = "llama3.2"
 # model = "gpt-4o"
 # model = "llama3.3:70b-instruct-q6_K"
 
@@ -26,9 +26,8 @@ pipeline = [
     'pdf_convert',
     'markdown_split',
     'markdown_classify',
-    # 'markdown_clean',
-    # 'quiz_create',
-    # 'quiz_polish',
+    'markdown_clean',
+    'quiz_create',
 ]
 
 
@@ -109,106 +108,73 @@ def markdown_split(input_path, output_path):
     splits = splitter.split_text(markdown)
     contents = [splits[i].page_content for i in range(len(splits))]
     for idx, content in enumerate(contents):
-        file_name = f"markdown_fragment_{idx + 1}.md"
+        file_name = f"fragment_{idx + 1}.md"
         file_path = output_path / file_name
         file_path.write_text(content, encoding='utf-8')
 
 
 def markdown_classify(input_path, output_path):
-    for idx, file_path in enumerate(input_path.iterdir()):
+    print(f"Clasifying Markdown to {output_path}")
+    for file_path in input_path.iterdir():
         markdown = file_path.read_text(encoding='utf-8')
         prompt_classify = "Classify as either \"Body\" or \"Paratext\":\n"
         response = call_model([
-            {"role": "system", "content": prm.YOU_RATE_CONTENT},
+            {"role": "system", "content": prm.CLASSIFY},
             {"role": "user", "content": prompt_classify + markdown},
         ])
         parameter = "body" if "body" in response.lower() else "paratext"
-        file_name = f"markdown_{idx + 1}_{parameter}.md"
-        file_path = output_path / file_name
-        file_path.write_text(markdown, encoding='utf-8')
+        file_name = f"{file_path.stem}_{parameter}.md"
+        file_path_new = output_path / file_name
+        file_path_new.write_text(markdown, encoding='utf-8')
 
 
-def reformat_markdowns_by_LLM(title, markdowns, output_dir):
-    for idx, content in enumerate(markdowns):
-        word_count = len(content.split())
-        print(f"RATING a Markdown {word_count} words long, {
-              idx + 1} / {len(markdowns)}")
-        prompt_classify = f"The following text comes from a book on {title}, it's about {
-            word_count} words in length. Classify it as either \"Body\" or \"Paratext\":\n\n"
-
-        response_classify_content = call_model([
-            {"role": "system", "content": prm.YOU_RATE_CONTENT},
-            {"role": "user", "content": prompt_classify + content},
+def markdown_clean(input_path, output_path):
+    print(f"Cleaning Markdown to {output_path}")
+    for file_path in input_path.iterdir():
+        markdown = file_path.read_text(encoding='utf-8')
+        response = call_model([
+            {"role": "system", "content": prm.CLEAN},
+            {"role": "user", "content": markdown}
         ])
+        clean_markdown = mdformat.text(response)
+        file_name = f"{file_path.stem}_clean.md"
+        file_path_new = output_path / file_name
+        file_path_new.write_text(clean_markdown, encoding='utf-8')
 
-        print(f"{idx + 1} --> ", response_classify_content)
 
-        def should_process(s): return "body" in s.lower()
-        file_name_clean = f"{title}_clean_{idx + 1}.md"
-        file_path_clean = output_dir / file_name_clean
-        file_name_quiz = f"{title}_QUIZ_{idx + 1}.md"
-        file_path_quiz = output_dir / file_name_quiz
-        file_name_quiz_improved = f"{title}_QUIZ_REVIEWED_{idx + 1}.md"
-        file_path_quiz_improved = output_dir / file_name_quiz_improved
-
-        if should_process(response_classify_content):
-            print(f"Cleaning Markdown {idx + 1} / {len(markdowns)}")
-
-            response_cleaning_content = call_model([
-                {"role": "system", "content": prm.YOU_ARE_A_MARKDOWN_CLEANER},
-                {"role": "user", "content": content}
-            ])
-
-            clean_markdown = mdformat.text(response_cleaning_content)
-            file_path_clean.write_text(clean_markdown, encoding='utf-8')
-
-            print(f"Creating Quiz     {idx + 1} / {len(markdowns)}")
-
-            response_quiz_content = call_model([
+def quiz_create(input_path, output_path):
+    print(f"Creating MCQs to {output_path}")
+    for file_path in input_path.iterdir():
+        markdown = file_path.read_text(encoding='utf-8')
+        file_name = f"{file_path.stem}_quiz.md"
+        file_path_new = output_path / file_name
+        if "_paratext_" in file_path.stem:
+            file_path_new.write_text("<!-- paratext -->", encoding='utf-8')
+        else:
+            response = call_model([
                 {
                     'role': 'system',
-                    'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER
+                    'content': prm.MCQ
                 },
-                {'role': 'user', 'content': clean_markdown},
+                {'role': 'user', 'content': markdown},
             ])
-            # improved_quiz_content = call_model([
-            #     {
-            #         'role': 'system',
-            #         'content': prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER
-            #     },
-            #     {'role': 'assistant', 'content': response_quiz_content},
-            #     {'role': 'user', 'content': prm.FINE_TUNE_QUIZ},
-            # ])
-            improved_quiz_content = response_quiz_content
-
-            # formatted_quiz = mdformat.text(response_quiz_content)
-            # file_path_quiz.write_text(formatted_quiz, encoding='utf-8')
-
-            # print(f"IMPROVING Quiz    {idx + 1} / {len(markdowns)}")
-
-            # improved_quiz_content = call_model([
-            #     {
-            #         "role": "system",
-            #         "content": prm.YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_REVIEWER,
-            #     },
-            #     {"role": "user", "content": formatted_quiz}
-            # ])
-
-            formatted_improved_quiz = mdformat.text(improved_quiz_content)
-            file_path_quiz_improved.write_text(
-                formatted_improved_quiz, encoding='utf-8')
-        else:
-            file_path_clean.write_text("<!-- paratext -->", encoding='utf-8')
-            # file_path_quiz.write_text("<!-- paratext -->", encoding='utf-8')
-            file_path_quiz_improved.write_text(
-                "<!-- paratext -->", encoding='utf-8'
-            )
+            response_improved = call_model([
+                {
+                    'role': 'system',
+                    'content': prm.IMPROVE_MCQ
+                },
+                {'role': 'assistant', 'content': response},
+                {'role': 'user', 'content': prm.IMPROVE_MCQ},
+            ])
+            file_path_new.write_text(response_improved, encoding='utf-8')
 
 
 tools = [
     pdf_convert,
     markdown_split,
     markdown_classify,
+    markdown_clean,
+    quiz_create,
 ]
 
 

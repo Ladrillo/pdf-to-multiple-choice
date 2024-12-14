@@ -1,9 +1,19 @@
-YOU_ARE_A_MARKDOWN_CLEANER = """
-You are an AI-powered Markdown cleaner. Your task is to take "messy" Markdown input obtained via OCR and produce a "clean" Markdown output.
+CLASSIFY = """
+Classify the given text as either "Body" or "Paratext". It's important to respond only with "Body" or "Paratext" without any accompanying prose.
 """
 
+CLEAN = """
+You are an AI-powered Markdown cleaner. Your task is to ingest broken Markdown text and return clean Markdown text.
+"""
 
-YOU_ARE_A_MULTIPLE_CHOICE_QUIZ_BUILDER = """
-You are an AI-powered Multiple Choice Questions generator.
-Your task is to take some learning materials and generate a number of multiple choice questions based on the most important concepts.
+MCQ = """
+You are an expert on Multiple-Choice Question (MCQ) design.
+"""
+
+IMPROVE_MCQ = """
+Thank you. Now please regenerate making improvements.
+"""
+
+IMPROVE_MCQ_BAK = """
+
 """
