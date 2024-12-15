@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 import mdformat
 import shutil
@@ -95,8 +96,9 @@ def call_model(messages):
 
 def pdf_convert(pdf_path, output_path):
     markdown = pymupdf4llm.to_markdown(pdf_path)
+    clean_markdown = markdown.encode('utf-8', errors='ignore').decode('utf-8')
     output_file_path = output_path / "complete.md"
-    output_file_path.write_text(markdown, encoding='utf-8')
+    output_file_path.write_text(clean_markdown, encoding='utf-8')
 
 
 def markdown_split(input_path, output_path):
@@ -147,6 +149,8 @@ def markdown_clean(input_path, output_path):
 def quiz_create(input_path, output_path):
     print(f"Creating MCQs to {output_path}...")
     for file_path in input_path.iterdir():
+        sys.stdout.write(f"\rCreating quiz for {file_path.stem}...")
+        sys.stdout.flush()
         markdown = file_path.read_text(encoding='utf-8')
         file_name = f"{file_path.stem}_quiz.md"
         file_path_new = output_path / file_name
@@ -157,13 +161,13 @@ def quiz_create(input_path, output_path):
                 {'role': 'system','content': prm.MCQ},
                 {'role': 'user', 'content': markdown},
             ])
-            response_improved = call_model([
-                {'role': 'system','content': prm.MCQ},
-                {'role': 'user', 'content': markdown},
-                {'role': 'assistant', 'content': response},
-                {'role': 'user', 'content': prm.IMPROVE_MCQ},
-            ])
-            file_path_new.write_text(response_improved, encoding='utf-8')
+            # response_improved = call_model([
+            #     {'role': 'system','content': prm.MCQ},
+            #     {'role': 'user', 'content': markdown},
+            #     {'role': 'assistant', 'content': response},
+            #     {'role': 'user', 'content': prm.IMPROVE_MCQ},
+            # ])
+            file_path_new.write_text(response, encoding='utf-8')
     print(f"Creating MCQs done")
 
 
