@@ -103,7 +103,7 @@ def pdf_convert(pdf_path, output_path):
 
 def markdown_split(input_path, output_path):
     print(f"Splitting Markdown to {output_path}...")
-    split_by = [("#", "H1"), ("##", "H2"), ("###", "H3"), ("####", "H4")]
+    split_by = [("#", "H1"), ("##", "H2"), ("###", "H3")] #, ("####", "H4")]
     splitter = MarkdownHeaderTextSplitter(split_by, strip_headers=False)
     markdown_path = list(input_path.iterdir())[0]
     markdown = markdown_path.read_text(encoding='utf-8')
@@ -117,7 +117,7 @@ def markdown_split(input_path, output_path):
 
 
 def markdown_classify(input_path, output_path):
-    print(f"Clasifying Markdown to {output_path}...")
+    print(f"Classifying Markdown to {output_path}...")
     for file_path in input_path.iterdir():
         sys.stdout.write(f"\rClassifying {file_path.stem}...")
         sys.stdout.flush()
