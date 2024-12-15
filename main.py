@@ -119,6 +119,8 @@ def markdown_split(input_path, output_path):
 def markdown_classify(input_path, output_path):
     print(f"Clasifying Markdown to {output_path}...")
     for file_path in input_path.iterdir():
+        sys.stdout.write(f"\rClassifying {file_path.stem}...")
+        sys.stdout.flush()
         markdown = file_path.read_text(encoding='utf-8')
         prompt_classify = "Classify as either \"Body\" or \"Paratext\":\n"
         response = call_model([
@@ -131,9 +133,12 @@ def markdown_classify(input_path, output_path):
         file_path_new.write_text(markdown, encoding='utf-8')
     print(f"Clasifying done")
 
+
 def markdown_clean(input_path, output_path):
     print(f"Cleaning Markdown to {output_path}...")
     for file_path in input_path.iterdir():
+        sys.stdout.write(f"\rCleaning {file_path.stem}...")
+        sys.stdout.flush()
         markdown = file_path.read_text(encoding='utf-8')
         response = call_model([
             {"role": "system", "content": prm.CLEAN},
@@ -149,7 +154,7 @@ def markdown_clean(input_path, output_path):
 def quiz_create(input_path, output_path):
     print(f"Creating MCQs to {output_path}...")
     for file_path in input_path.iterdir():
-        sys.stdout.write(f"\rCreating quiz for {file_path.stem}...")
+        sys.stdout.write(f"\rCreating MCQs {file_path.stem}...")
         sys.stdout.flush()
         markdown = file_path.read_text(encoding='utf-8')
         file_name = f"{file_path.stem}_quiz.md"
@@ -158,11 +163,11 @@ def quiz_create(input_path, output_path):
             file_path_new.write_text("<!-- paratext -->", encoding='utf-8')
         else:
             response = call_model([
-                {'role': 'system','content': prm.MCQ},
+                {'role': 'system', 'content': prm.MCQ},
                 {'role': 'user', 'content': markdown},
             ])
             response_improved = call_model([
-                {'role': 'system','content': prm.MCQ},
+                {'role': 'system', 'content': prm.MCQ},
                 {'role': 'user', 'content': markdown},
                 {'role': 'assistant', 'content': response},
                 {'role': 'user', 'content': prm.IMPROVE_MCQ},
