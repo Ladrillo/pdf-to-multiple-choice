@@ -7,6 +7,7 @@ import pymupdf4llm
 from ollama import chat
 from openai import OpenAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter
+from natsort import natsorted
 
 try:
     import prompts as prm
@@ -27,7 +28,7 @@ class Conversion():
     def __init__(self, pdf_path, title):
         self.temperature = 0
         self.num_ctx = 8192
-        self.model = "gpt-4o-mini"
+        self.model = "llama3.3"
         self.title = title
         self.pdf_path = pdf_path
         self.pipeline = [
@@ -107,7 +108,7 @@ class Conversion():
         print(f"Splitting Markdown to {output_path}...")
         split_by = [("#", "H1"), ("##", "H2"), ("###", "H3"), ("####", "H4")]
         splitter = MarkdownHeaderTextSplitter(split_by, strip_headers=False)
-        markdown_path = sorted(input_path.iterdir())[0]
+        markdown_path = natsorted(input_path.iterdir())[0]
         markdown = markdown_path.read_text(encoding='utf-8')
         splits = splitter.split_text(markdown)
         contents = [splits[i].page_content for i in range(len(splits))]
@@ -121,7 +122,7 @@ class Conversion():
         print(f"Classifying Markdown to {output_path}...")
         instructions = Template(prm.CLASSIFY)
         instructions_sub = instructions.substitute(doc_title=self.title)
-        for file_path in sorted(input_path.iterdir()):
+        for file_path in natsorted(input_path.iterdir()):
             sys.stdout.write(f"\rClassifying {file_path.stem}...")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
@@ -137,7 +138,7 @@ class Conversion():
 
     def markdown_clean(self, input_path, output_path):
         print(f"Cleaning Markdown to {output_path}...")
-        for file_path in sorted(input_path.iterdir()):
+        for file_path in natsorted(input_path.iterdir()):
             sys.stdout.write(f"\rCleaning {file_path.stem}...")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
@@ -156,7 +157,7 @@ class Conversion():
 
     def quiz_create(self, input_path, output_path):
         print(f"Creating MCQs to {output_path}...")
-        for file_path in sorted(input_path.iterdir()):
+        for file_path in natsorted(input_path.iterdir()):
             sys.stdout.write(f"\rCreating MCQs {file_path.stem}...")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
