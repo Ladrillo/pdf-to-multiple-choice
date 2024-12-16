@@ -18,10 +18,10 @@ except ImportError:
 client = OpenAI()
 
 temperature = 0
-num_ctx = 16384
-# model = "llama3.3"
+num_ctx = 8192
+model = "llama3.3"
 # model = "gpt-4o"
-model = "llama3.3:70b-instruct-q6_K"
+# model = "llama3.3:70b-instruct-q6_K"
 
 pipeline = [
     'pdf_convert',
@@ -103,7 +103,7 @@ def pdf_convert(pdf_path, output_path):
 
 def markdown_split(input_path, output_path):
     print(f"Splitting Markdown to {output_path}...")
-    split_by = [("#", "H1"), ("##", "H2"), ("###", "H3")] #, ("####", "H4")]
+    split_by = [("#", "H1"), ("##", "H2"), ("###", "H3"), ("####", "H4")]
     splitter = MarkdownHeaderTextSplitter(split_by, strip_headers=False)
     markdown_path = list(input_path.iterdir())[0]
     markdown = markdown_path.read_text(encoding='utf-8')
@@ -140,14 +140,17 @@ def markdown_clean(input_path, output_path):
         sys.stdout.write(f"\rCleaning {file_path.stem}...")
         sys.stdout.flush()
         markdown = file_path.read_text(encoding='utf-8')
-        response = call_model([
-            {"role": "system", "content": prm.CLEAN},
-            {"role": "user", "content": markdown}
-        ])
-        clean_markdown = mdformat.text(response)
         file_name = f"{file_path.stem}_clean.md"
         file_path_new = output_path / file_name
-        file_path_new.write_text(clean_markdown, encoding='utf-8')
+        if "_paratext_" in file_path.stem:
+            file_path_new.write_text("<!-- paratext -->", encoding='utf-8')
+        else:
+            response = call_model([
+                {"role": "system", "content": prm.CLEAN},
+                {"role": "user", "content": markdown}
+            ])
+            clean_markdown = mdformat.text(response)
+            file_path_new.write_text(clean_markdown, encoding='utf-8')
     print(f"Cleaning done")
 
 
