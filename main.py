@@ -78,7 +78,7 @@ def make_folders(path):
 
 
 def call_model(messages):
-    if model == "gpt-4o":
+    if "gpt-4o" in model:
         response = client.chat.completions.create(
             model=model,
             messages=messages,
@@ -88,8 +88,8 @@ def call_model(messages):
     else:
         response = chat(
             model=model,
+            messages=messages,
             options={"temperature": temperature, "num_ctx": num_ctx},
-            messages=messages
         )
         return response['message']['content']
 
