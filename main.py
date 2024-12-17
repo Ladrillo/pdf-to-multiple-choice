@@ -10,7 +10,7 @@ from openai import OpenAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from natsort import natsorted
 
-model = "llama3.2"
+model = "llama3.3"
 
 generation_params = {
     # int - Enables Mirostat for controlling perplexity (0=off, 1/2=on).
@@ -26,7 +26,7 @@ generation_params = {
     # float - Penalizes repetition (higher = stronger penalty).
     "repeat_penalty": 1.1,
     # float - Controls creativity; higher = more random output.
-    "temperature": 0.1,
+    "temperature": 0,
     # int - Random seed for reproducibility (0 = random).
     "seed": 0,
     # string[] - Stop generation when encountering these patterns.
@@ -34,7 +34,7 @@ generation_params = {
     # float - Tail-free sampling; reduces less probable tokens.
     "tfs_z": 1.0,
     # int - Max tokens to predict (-1 = infinite).
-    "num_predict": -1,
+    "num_predict": 8192,
     # int - Limits token pool to top-k most likely tokens.
     "top_k": 40,
     # float - Nucleus sampling; considers tokens with cumulative prob <= p.
@@ -221,11 +221,11 @@ class Conversion():
                 ])
                 response_improved = self.call_model([
                     {'role': 'system', 'content': prm.MCQ},
-                    {'role': 'user', 'content': markdown},
+                    # {'role': 'user', 'content': markdown},
                     {'role': 'assistant', 'content': response},
                     {'role': 'user', 'content': prm.IMPROVE_MCQ},
                 ])
-                self.safely_write_file(file_path_new, response_improved)
+                self.safely_write_file(file_path_new, mdformat.text(response_improved))
         print(f"Creating MCQs done")
 
     def run(self):
