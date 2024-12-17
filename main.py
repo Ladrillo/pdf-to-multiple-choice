@@ -221,7 +221,7 @@ class Conversion():
                 ])
                 response_improved = self.call_model([
                     {'role': 'system', 'content': prm.MCQ},
-                    # {'role': 'user', 'content': markdown},
+                    {'role': 'user', 'content': markdown},
                     {'role': 'assistant', 'content': response},
                     {'role': 'user', 'content': prm.IMPROVE_MCQ},
                 ])
