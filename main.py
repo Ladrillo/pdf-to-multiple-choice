@@ -1,4 +1,5 @@
 import sys
+import os
 from string import Template
 from pathlib import Path
 import mdformat
@@ -8,6 +9,40 @@ from ollama import chat
 from openai import OpenAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from natsort import natsorted
+
+model = "llama3.2"
+
+generation_params = {
+    # int - Enables Mirostat for controlling perplexity (0=off, 1/2=on).
+    "mirostat": 0,
+    # float - Learning rate for Mirostat; higher = faster adjustments.
+    "mirostat_eta": 0.1,
+    # float - Balances coherence vs. diversity; lower = more focused.
+    "mirostat_tau": 5.0,
+    # int - Size of the context window for generating tokens.
+    "num_ctx": 8192,
+    # int - How far back to look to avoid repetition (-1 = full context).
+    "repeat_last_n": 64,
+    # float - Penalizes repetition (higher = stronger penalty).
+    "repeat_penalty": 1.1,
+    # float - Controls creativity; higher = more random output.
+    "temperature": 0.1,
+    # int - Random seed for reproducibility (0 = random).
+    "seed": 0,
+    # string[] - Stop generation when encountering these patterns.
+    "stop": [],
+    # float - Tail-free sampling; reduces less probable tokens.
+    "tfs_z": 1.0,
+    # int - Max tokens to predict (-1 = infinite).
+    "num_predict": -1,
+    # int - Limits token pool to top-k most likely tokens.
+    "top_k": 40,
+    # float - Nucleus sampling; considers tokens with cumulative prob <= p.
+    "top_p": 0.9,
+    # float - Filters tokens below this probability threshold.
+    "min_p": 0.05
+}
+
 
 try:
     import prompts as prm
@@ -26,9 +61,8 @@ class PipelineCompleteError(Exception):
 
 class Conversion():
     def __init__(self, pdf_path, title):
-        self.temperature = 0
-        self.num_ctx = 8192
-        self.model = "llama3.3"
+        self.model = model
+        self.generation_params = generation_params
         self.title = title
         self.pdf_path = pdf_path
         self.pipeline = [
@@ -84,25 +118,40 @@ class Conversion():
         if "gpt-4o" in self.model:
             response = client.chat.completions.create(
                 model=self.model,
-                temperature=self.temperature,
+                temperature=0,
                 messages=messages,
             )
             return response.choices[0].message.content
         else:
             response = chat(
                 model=self.model,
-                options={"temperature": self.temperature,
-                         "num_ctx": self.num_ctx},
+                options=self.generation_params,
                 messages=messages,
             )
             return response['message']['content']
 
+    def safely_write_file(self, file_path, content):
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
+                f.flush()
+                os.fsync(f.fileno())
+            # Read back to verify
+            with open(file_path, "r", encoding="utf-8") as f:
+                written_content = f.read()
+            if written_content != content:
+                raise ValueError(f"Content mismatch in {file_path}")
+        except (IOError, ValueError) as e:
+            print(f"Error during file write/read for {file_path}")
+            raise
+
     def pdf_convert(self, output_path):
         markdown = pymupdf4llm.to_markdown(self.pdf_path)
         clean_markdown = markdown.encode(
-            'utf-8', errors='ignore').decode('utf-8')
+            'utf-8', errors='ignore'
+        ).decode('utf-8')
         output_file_path = output_path / "complete.md"
-        output_file_path.write_text(clean_markdown, encoding='utf-8')
+        self.safely_write_file(output_file_path, clean_markdown)
 
     def markdown_split(self, input_path, output_path):
         print(f"Splitting Markdown to {output_path}...")
@@ -115,7 +164,7 @@ class Conversion():
         for idx, content in enumerate(contents):
             file_name = f"fragment_{idx + 1}.md"
             file_path = output_path / file_name
-            file_path.write_text(content, encoding='utf-8')
+            self.safely_write_file(file_path, content)
         print(f"Splitting done")
 
     def markdown_classify(self, input_path, output_path):
@@ -123,7 +172,7 @@ class Conversion():
         instructions = Template(prm.CLASSIFY)
         instructions_sub = instructions.substitute(doc_title=self.title)
         for file_path in natsorted(input_path.iterdir()):
-            sys.stdout.write(f"\rClassifying {file_path.stem}...")
+            sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
             response = self.call_model([
@@ -133,13 +182,13 @@ class Conversion():
             parameter = "body" if "body" in response.lower() else "paratext"
             file_name = f"{file_path.stem}_{parameter}.md"
             file_path_new = output_path / file_name
-            file_path_new.write_text(markdown, encoding='utf-8')
+            self.safely_write_file(file_path_new, markdown)
         print(f"Clasifying done")
 
     def markdown_clean(self, input_path, output_path):
         print(f"Cleaning Markdown to {output_path}...")
         for file_path in natsorted(input_path.iterdir()):
-            sys.stdout.write(f"\rCleaning {file_path.stem}...")
+            sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
             file_name = f"{file_path.stem}_clean.md"
@@ -152,13 +201,13 @@ class Conversion():
                     {"role": "user", "content": markdown}
                 ])
                 clean_markdown = mdformat.text(response)
-                file_path_new.write_text(clean_markdown, encoding='utf-8')
+                self.safely_write_file(file_path_new, clean_markdown)
         print(f"Cleaning done")
 
     def quiz_create(self, input_path, output_path):
         print(f"Creating MCQs to {output_path}...")
         for file_path in natsorted(input_path.iterdir()):
-            sys.stdout.write(f"\rCreating MCQs {file_path.stem}...")
+            sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
             file_name = f"{file_path.stem}_quiz.md"
@@ -176,7 +225,7 @@ class Conversion():
                     {'role': 'assistant', 'content': response},
                     {'role': 'user', 'content': prm.IMPROVE_MCQ},
                 ])
-                file_path_new.write_text(response_improved, encoding='utf-8')
+                self.safely_write_file(file_path_new, response_improved)
         print(f"Creating MCQs done")
 
     def run(self):
