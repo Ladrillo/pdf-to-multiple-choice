@@ -8,6 +8,7 @@ import pymupdf4llm
 from ollama import chat
 from openai import OpenAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter
+from pydantic import BaseModel
 from natsort import natsorted
 
 model = "llama3.3"
@@ -59,6 +60,21 @@ class PipelineCompleteError(Exception):
     pass
 
 
+class Option(BaseModel):
+    option_text: str
+    is_correct: bool
+
+
+class Question(BaseModel):
+    question_title: str
+    question_text: str
+    options: list[Option]
+
+
+class QuestionsList(BaseModel):
+    questions: list[Question]
+
+
 class Conversion():
     def __init__(self, pdf_path, title):
         self.model = model
@@ -71,6 +87,7 @@ class Conversion():
             self.markdown_classify,
             self.markdown_clean,
             self.quiz_create,
+            self.quiz_to_json,
         ]
         self.output_dir_path = self.get_output_dir_path()
         self.output_subdir_paths = self.get_output_subdir_paths()
@@ -114,7 +131,7 @@ class Conversion():
                 shutil.rmtree(subdir_path)
             subdir_path.mkdir(parents=True, exist_ok=True)
 
-    def call_model(self, messages):
+    def call_model(self, messages, format=None):
         if "gpt-4o" in self.model:
             response = client.chat.completions.create(
                 model=self.model,
@@ -127,6 +144,7 @@ class Conversion():
                 model=self.model,
                 options=self.generation_params,
                 messages=messages,
+                format=format
             )
             return response['message']['content']
 
@@ -225,8 +243,32 @@ class Conversion():
                     {'role': 'assistant', 'content': response},
                     {'role': 'user', 'content': prm.IMPROVE_MCQ},
                 ])
-                self.safely_write_file(file_path_new, mdformat.text(response_improved))
+                self.safely_write_file(
+                    file_path_new, mdformat.text(response_improved)
+                )
         print(f"Creating MCQs done")
+
+    def quiz_to_json(self, input_path, output_path):
+        print(f"Converting MCQs to JSON to {output_path}...")
+        for file_path in natsorted(input_path.iterdir()):
+            sys.stdout.write(f"\r=> Processing {file_path.stem}")
+            sys.stdout.flush()
+            markdown = file_path.read_text(encoding='utf-8')
+            file_name = f"{file_path.stem}.json"
+            file_path_new = output_path / file_name
+            if "_paratext" in file_path.stem:
+                file_path_new.write_text("[]", encoding='utf-8')
+            else:
+                response = self.call_model(
+                    [
+                        {'role': 'system', 'content': prm.OUTPUT_JSON},
+                        {'role': 'user', 'content': markdown},
+                    ],
+                    QuestionsList.model_json_schema()
+                )
+                mcqs = QuestionsList.model_validate_json(response)
+                mcqs_json = mcqs.model_dump_json()
+                self.safely_write_file(file_path_new, mcqs_json)
 
     def run(self):
         for idx in range(self.pointer, len(self.output_subdir_paths)):
