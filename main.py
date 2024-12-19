@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 from string import Template
 from pathlib import Path
 import mdformat
@@ -94,6 +95,12 @@ class Conversion():
         self.pointer = self.get_pointer()
         self.make_folders()
 
+    def format_time(self, seconds):
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        seconds = int(seconds % 60)
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+
     def get_pointer(self):
         pointer = 0
         if not self.output_dir_path.exists() or not self.output_dir_path.is_dir():
@@ -172,7 +179,6 @@ class Conversion():
         self.safely_write_file(output_file_path, clean_markdown)
 
     def markdown_split(self, input_path, output_path):
-        print(f"Splitting Markdown to {output_path}...")
         split_by = [("#", "H1"), ("##", "H2"), ("###", "H3"), ("####", "H4")]
         splitter = MarkdownHeaderTextSplitter(split_by, strip_headers=False)
         markdown_path = natsorted(input_path.iterdir())[0]
@@ -183,10 +189,8 @@ class Conversion():
             file_name = f"fragment_{idx + 1}.md"
             file_path = output_path / file_name
             self.safely_write_file(file_path, content)
-        print(f"Splitting done")
 
     def markdown_classify(self, input_path, output_path):
-        print(f"Classifying Markdown to {output_path}...")
         instructions = Template(prm.CLASSIFY)
         instructions_sub = instructions.substitute(doc_title=self.title)
         for file_path in natsorted(input_path.iterdir()):
@@ -201,10 +205,8 @@ class Conversion():
             file_name = f"{file_path.stem}_{parameter}.md"
             file_path_new = output_path / file_name
             self.safely_write_file(file_path_new, markdown)
-        print(f"Clasifying done")
 
     def markdown_clean(self, input_path, output_path):
-        print(f"Cleaning Markdown to {output_path}...")
         for file_path in natsorted(input_path.iterdir()):
             sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
@@ -220,10 +222,8 @@ class Conversion():
                 ])
                 clean_markdown = mdformat.text(response)
                 self.safely_write_file(file_path_new, clean_markdown)
-        print(f"Cleaning done")
 
     def quiz_create(self, input_path, output_path):
-        print(f"Creating MCQs to {output_path}...")
         for file_path in natsorted(input_path.iterdir()):
             sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
@@ -246,10 +246,8 @@ class Conversion():
                 self.safely_write_file(
                     file_path_new, mdformat.text(response_improved)
                 )
-        print(f"Creating MCQs done")
 
     def quiz_to_json(self, input_path, output_path):
-        print(f"Converting MCQs to JSON to {output_path}...")
         for file_path in natsorted(input_path.iterdir()):
             sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
@@ -257,7 +255,7 @@ class Conversion():
             file_name = f"{file_path.stem}.json"
             file_path_new = output_path / file_name
             if "_paratext" in file_path.stem:
-                file_path_new.write_text("[]", encoding='utf-8')
+                file_path_new.write_text('{"questions":[]}', encoding='utf-8')
             else:
                 response = self.call_model(
                     [
@@ -272,6 +270,8 @@ class Conversion():
 
     def run(self):
         for idx in range(self.pointer, len(self.output_subdir_paths)):
+            print(f"Step {self.pipeline[idx].__name__} started")
+            start_time = time.time()
             if idx == 0:
                 # the first tool is a special case
                 self.pipeline[idx](self.output_subdir_paths[0])
@@ -280,6 +280,9 @@ class Conversion():
                     self.output_subdir_paths[idx - 1],
                     self.output_subdir_paths[idx]
                 )
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print(f"Step {self.pipeline[idx].__name__} took {self.format_time(elapsed_time)} (hh:mm:ss)")
 
 
 if __name__ == "__main__":
