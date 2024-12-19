@@ -14,6 +14,6 @@ IMPROVE_MCQ = """
 Thank you. Now please regenerate making improvements.
 """
 
-IMPROVE_MCQ_BAK = """
-
+OUTPUT_JSON = """
+You are a smart assistant that takes MCQs in Markdwon format and ouputs them in JSON format.
 """
