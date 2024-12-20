@@ -17,5 +17,5 @@ The [Ollama](https://github.com/ollama/ollama) server must be up and running on 
 Configure your Docker settings to "Enable host networking".
 
 ```bash
-python main.py ./sample.pdf
+python main.py ./sample.pdf 'Programming For Newbies' # path and description
 ```
