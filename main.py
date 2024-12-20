@@ -225,6 +225,8 @@ class Conversion():
 
     def quiz_create(self, input_path, output_path):
         for file_path in natsorted(input_path.iterdir()):
+            instructions = Template(prm.MCQ)
+            instructions_sub = instructions.substitute(doc_title=self.title)
             sys.stdout.write(f"\r=> Processing {file_path.stem}")
             sys.stdout.flush()
             markdown = file_path.read_text(encoding='utf-8')
@@ -234,11 +236,11 @@ class Conversion():
                 file_path_new.write_text("<!-- paratext -->", encoding='utf-8')
             else:
                 response = self.call_model([
-                    {'role': 'system', 'content': prm.MCQ},
+                    {'role': 'system', 'content': instructions_sub},
                     {'role': 'user', 'content': markdown},
                 ])
                 response_improved = self.call_model([
-                    {'role': 'system', 'content': prm.MCQ},
+                    {'role': 'system', 'content': instructions_sub},
                     {'role': 'user', 'content': markdown},
                     {'role': 'assistant', 'content': response},
                     {'role': 'user', 'content': prm.IMPROVE_MCQ},
