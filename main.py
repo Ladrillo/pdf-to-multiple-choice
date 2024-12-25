@@ -179,7 +179,7 @@ class Conversion():
         self.safely_write_file(output_file_path, clean_markdown)
 
     def markdown_split(self, input_path, output_path):
-        split_by = [("#", "H1"), ("##", "H2"), ("###", "H3"), ("####", "H4")]
+        split_by = [("#", "H1"), ("##", "H2"), ("###", "H3")] #, ("####", "H4")]
         splitter = MarkdownHeaderTextSplitter(split_by, strip_headers=False)
         markdown_path = natsorted(input_path.iterdir())[0]
         markdown = markdown_path.read_text(encoding='utf-8')
